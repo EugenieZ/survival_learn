@@ -1,0 +1,40 @@
+title: "Coursera: Survival Analysis with R"
+author: "Yujin Zhang"
+date: "7/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(survival)
+library(ggplot2)
+```
+
+##Running a KM plot and log-rank test
+First, we load the dataset and do some variable manipulation.
+
+```{r}
+#load course data
+tbl1 = read_csv(file = "./data/prcatice_data.csv") %>% 
+  mutate(gender = as.factor(gender))
+
+head(tbl1)
+```
+
+Then we run overall KM method.
+```{r}
+km_fit = survfit(Surv(fu_time, death) ~ 1,data = tbl1) #call overall k-m plot
+plot(km_fit)
+
+summary(km_fit, times = c(1:7,30,60,90*(1:10)))
+```
+
+Run KM method by gender
+```{r}
+km_gender = survfit(Surv(fu_time, death) ~ gender,data = tbl1) #split the curve by gender
+plot(km_gender)
+
+survdiff(Surv(fu_time, death) ~ gender, data = tbl1) #compare survival curve
+
+```
+
