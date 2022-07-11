@@ -370,7 +370,8 @@ date: “7/6/2022” output: html_document —</p>
 do some variable manipulation.</p>
 <pre class="r"><code>#load course data
 tbl1 = read_csv(file = &quot;./data/prcatice_data.csv&quot;) %&gt;% 
-  mutate(gender = as.factor(gender))</code></pre>
+  mutate(gender = as.factor(gender)) %&gt;% 
+  mutate(ethnicgroup = as.factor(ethnicgroup))</code></pre>
 <pre><code>## Rows: 1000 Columns: 31</code></pre>
 <pre><code>## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -393,7 +394,7 @@ tbl1 = read_csv(file = &quot;./data/prcatice_data.csv&quot;) %&gt;%
 ## #   renal_disease &lt;dbl&gt;, valvular_disease &lt;dbl&gt;, metastatic_cancer &lt;dbl&gt;,
 ## #   pacemaker &lt;dbl&gt;, pneumonia &lt;dbl&gt;, prior_appts_attended &lt;dbl&gt;,
 ## #   prior_dnas &lt;dbl&gt;, pci &lt;dbl&gt;, stroke &lt;dbl&gt;, senile &lt;dbl&gt;, quintile &lt;dbl&gt;,
-## #   ethnicgroup &lt;dbl&gt;, fu_time &lt;dbl&gt;</code></pre>
+## #   ethnicgroup &lt;fct&gt;, fu_time &lt;dbl&gt;</code></pre>
 <p>Then we run overall KM method.</p>
 <pre class="r"><code>km_fit = survfit(Surv(fu_time, death) ~ 1,data = tbl1) #call overall k-m plot
 plot(km_fit)</code></pre>
@@ -434,6 +435,31 @@ plot(km_gender)</code></pre>
 ## gender=2 452      224      221    0.0448     0.082
 ## 
 ##  Chisq= 0.1  on 1 degrees of freedom, p= 0.8</code></pre>
+<p>##Running Simple Cox Model</p>
+<pre class="r"><code>cox_mod = coxph(Surv(fu_time, death) ~ ethnicgroup, data = tbl1)
+summary(cox_mod)</code></pre>
+<pre><code>## Call:
+## coxph(formula = Surv(fu_time, death) ~ ethnicgroup, data = tbl1)
+## 
+##   n= 957, number of events= 471 
+##    (43 observations deleted due to missingness)
+## 
+##                  coef exp(coef) se(coef)      z Pr(&gt;|z|)   
+## ethnicgroup2 -0.06428   0.93774  0.32000 -0.201  0.84078   
+## ethnicgroup3 -1.19586   0.30244  0.41108 -2.909  0.00362 **
+## ethnicgroup9  0.07394   1.07674  0.35706  0.207  0.83596   
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##              exp(coef) exp(-coef) lower .95 upper .95
+## ethnicgroup2    0.9377     1.0664    0.5008    1.7558
+## ethnicgroup3    0.3024     3.3064    0.1351    0.6769
+## ethnicgroup9    1.0767     0.9287    0.5348    2.1679
+## 
+## Concordance= 0.516  (se = 0.006 )
+## Likelihood ratio test= 12.99  on 3 df,   p=0.005
+## Wald test            = 8.55  on 3 df,   p=0.04
+## Score (logrank) test = 9.61  on 3 df,   p=0.02</code></pre>
 
 
 

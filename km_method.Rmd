@@ -16,7 +16,8 @@ First, we load the dataset and do some variable manipulation.
 ```{r}
 #load course data
 tbl1 = read_csv(file = "./data/prcatice_data.csv") %>% 
-  mutate(gender = as.factor(gender))
+  mutate(gender = as.factor(gender)) %>% 
+  mutate(ethnicgroup = as.factor(ethnicgroup))
 
 head(tbl1)
 ```
@@ -37,4 +38,18 @@ plot(km_gender)
 survdiff(Surv(fu_time, death) ~ gender, data = tbl1) #compare survival curve
 
 ```
+
+##Running Simple Cox Model
+
+```{r}
+cox_mod = coxph(Surv(fu_time, death) ~ ethnicgroup, data = tbl1)
+summary(cox_mod)
+```
+
+About missing data:  
+1. should be missing at random (example of survey data/not random)  
+2. the process to treat missing data: understand why those data are missing- try to fill in the missing values on the basis of another variable- complete case analysis/ mean substitution/ multiple imputation/ maximum likelihood  
+
+
+
 
