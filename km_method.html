@@ -371,7 +371,8 @@ do some variable manipulation.</p>
 <pre class="r"><code>#load course data
 tbl1 = read_csv(file = &quot;./data/prcatice_data.csv&quot;) %&gt;% 
   mutate(gender = as.factor(gender)) %&gt;% 
-  mutate(ethnicgroup = as.factor(ethnicgroup))</code></pre>
+  mutate(ethnicgroup = as.factor(ethnicgroup)) %&gt;% 
+  mutate(copd = as.factor(copd))</code></pre>
 <pre><code>## Rows: 1000 Columns: 31</code></pre>
 <pre><code>## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
@@ -390,7 +391,7 @@ tbl1 = read_csv(file = &quot;./data/prcatice_data.csv&quot;) %&gt;%
 ## 5     5     0    17    94 2           0     0     0     0        0        1
 ## 6     6     0    47    89 1           0     0     0     0        0        0
 ## # … with 20 more variables: hypertension &lt;dbl&gt;, ihd &lt;dbl&gt;, mental_health &lt;dbl&gt;,
-## #   arrhythmias &lt;dbl&gt;, copd &lt;dbl&gt;, obesity &lt;dbl&gt;, pvd &lt;dbl&gt;,
+## #   arrhythmias &lt;dbl&gt;, copd &lt;fct&gt;, obesity &lt;dbl&gt;, pvd &lt;dbl&gt;,
 ## #   renal_disease &lt;dbl&gt;, valvular_disease &lt;dbl&gt;, metastatic_cancer &lt;dbl&gt;,
 ## #   pacemaker &lt;dbl&gt;, pneumonia &lt;dbl&gt;, prior_appts_attended &lt;dbl&gt;,
 ## #   prior_dnas &lt;dbl&gt;, pci &lt;dbl&gt;, stroke &lt;dbl&gt;, senile &lt;dbl&gt;, quintile &lt;dbl&gt;,
@@ -460,6 +461,224 @@ summary(cox_mod)</code></pre>
 ## Likelihood ratio test= 12.99  on 3 df,   p=0.005
 ## Wald test            = 8.55  on 3 df,   p=0.04
 ## Score (logrank) test = 9.61  on 3 df,   p=0.02</code></pre>
+<p>About missing data:<br />
+1. should be missing at random (example of survey data/not random)<br />
+2. the process to treat missing data: understand why those data are
+missing- try to fill in the missing values on the basis of another
+variable- complete case analysis/ mean substitution/ multiple
+imputation/ maximum likelihood</p>
+<p>##Running Multiple Cox Model</p>
+<pre class="r"><code>cox_mod2 = coxph(Surv(fu_time, death) ~ ethnicgroup+age+gender+copd+prior_dnas, data = tbl1)
+summary(cox_mod2)</code></pre>
+<pre><code>## Call:
+## coxph(formula = Surv(fu_time, death) ~ ethnicgroup + age + gender + 
+##     copd + prior_dnas, data = tbl1)
+## 
+##   n= 957, number of events= 471 
+##    (43 observations deleted due to missingness)
+## 
+##                   coef exp(coef)  se(coef)      z Pr(&gt;|z|)    
+## ethnicgroup2 -0.300372  0.740543  0.354585 -0.847  0.39693    
+## ethnicgroup3 -0.794072  0.452000  0.414508 -1.916  0.05540 .  
+## ethnicgroup9  0.410506  1.507581  0.360902  1.137  0.25535    
+## age           0.064765  1.066909  0.005719 11.324  &lt; 2e-16 ***
+## gender2      -0.277178  0.757920  0.096227 -2.880  0.00397 ** 
+## copd1         0.085753  1.089537  0.106380  0.806  0.42019    
+## prior_dnas    0.166117  1.180712  0.040028  4.150 3.32e-05 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##              exp(coef) exp(-coef) lower .95 upper .95
+## ethnicgroup2    0.7405     1.3504    0.3696    1.4838
+## ethnicgroup3    0.4520     2.2124    0.2006    1.0185
+## ethnicgroup9    1.5076     0.6633    0.7432    3.0583
+## age             1.0669     0.9373    1.0550    1.0789
+## gender2         0.7579     1.3194    0.6276    0.9152
+## copd1           1.0895     0.9178    0.8845    1.3421
+## prior_dnas      1.1807     0.8469    1.0916    1.2771
+## 
+## Concordance= 0.671  (se = 0.013 )
+## Likelihood ratio test= 170.9  on 7 df,   p=&lt;2e-16
+## Wald test            = 143.6  on 7 df,   p=&lt;2e-16
+## Score (logrank) test = 141.5  on 7 df,   p=&lt;2e-16</code></pre>
+<p>What to do when model does not converge:</p>
+<pre class="r"><code>tbl2 =
+  tbl1 %&gt;% 
+  mutate(quintile = as.factor(quintile))
+
+cox_uncon = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)</code></pre>
+<pre><code>## Warning in coxph.fit(X, Y, istrat, offset, init, control, weights = weights, :
+## Loglik converged before variable 4,5,6,7,8 ; coefficient may be infinite.</code></pre>
+<pre class="r"><code>summary(cox_uncon)</code></pre>
+<pre><code>## Call:
+## coxph(formula = Surv(fu_time, death) ~ age + gender + copd + 
+##     quintile + ethnicgroup, data = tbl2)
+## 
+##   n= 951, number of events= 468 
+##    (49 observations deleted due to missingness)
+## 
+##                    coef  exp(coef)   se(coef)      z Pr(&gt;|z|)    
+## age           6.213e-02  1.064e+00  5.606e-03 11.082  &lt; 2e-16 ***
+## gender2      -3.104e-01  7.332e-01  9.695e-02 -3.201  0.00137 ** 
+## copd1         6.439e-02  1.067e+00  1.092e-01  0.590  0.55548    
+## quintile1     1.422e+01  1.501e+06  9.177e+02  0.015  0.98764    
+## quintile2     1.391e+01  1.094e+06  9.177e+02  0.015  0.98791    
+## quintile3     1.431e+01  1.638e+06  9.177e+02  0.016  0.98756    
+## quintile4     1.427e+01  1.579e+06  9.177e+02  0.016  0.98759    
+## quintile5     1.430e+01  1.631e+06  9.177e+02  0.016  0.98756    
+## ethnicgroup2  1.402e-02  1.014e+00  3.261e-01  0.043  0.96570    
+## ethnicgroup3 -7.728e-01  4.617e-01  4.167e-01 -1.854  0.06369 .  
+## ethnicgroup9  5.211e-01  1.684e+00  3.623e-01  1.438  0.15038    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##              exp(coef) exp(-coef) lower .95 upper .95
+## age          1.064e+00  9.398e-01    1.0525    1.0759
+## gender2      7.332e-01  1.364e+00    0.6063    0.8866
+## copd1        1.067e+00  9.376e-01    0.8610    1.3211
+## quintile1    1.501e+06  6.660e-07    0.0000       Inf
+## quintile2    1.094e+06  9.141e-07    0.0000       Inf
+## quintile3    1.638e+06  6.107e-07    0.0000       Inf
+## quintile4    1.579e+06  6.332e-07    0.0000       Inf
+## quintile5    1.631e+06  6.131e-07    0.0000       Inf
+## ethnicgroup2 1.014e+00  9.861e-01    0.5352    1.9217
+## ethnicgroup3 4.617e-01  2.166e+00    0.2040    1.0450
+## ethnicgroup9 1.684e+00  5.939e-01    0.8277    3.4254
+## 
+## Concordance= 0.67  (se = 0.013 )
+## Likelihood ratio test= 169.6  on 11 df,   p=&lt;2e-16
+## Wald test            = 142.4  on 11 df,   p=&lt;2e-16
+## Score (logrank) test = 143.1  on 11 df,   p=&lt;2e-16</code></pre>
+<pre class="r"><code># 1. change the reference category
+tbl2 =
+  tbl2 %&gt;% 
+  mutate(quintile = relevel(quintile, ref = 2)) #quintile 1 as the ref cat 
+
+cox_uncon = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)</code></pre>
+<pre><code>## Warning in coxph.fit(X, Y, istrat, offset, init, control, weights = weights, :
+## Loglik converged before variable 4 ; coefficient may be infinite.</code></pre>
+<pre class="r"><code>summary(cox_uncon) </code></pre>
+<pre><code>## Call:
+## coxph(formula = Surv(fu_time, death) ~ age + gender + copd + 
+##     quintile + ethnicgroup, data = tbl2)
+## 
+##   n= 951, number of events= 468 
+##    (49 observations deleted due to missingness)
+## 
+##                    coef  exp(coef)   se(coef)      z Pr(&gt;|z|)    
+## age           6.213e-02  1.064e+00  5.606e-03 11.082  &lt; 2e-16 ***
+## gender2      -3.104e-01  7.332e-01  9.695e-02 -3.201  0.00137 ** 
+## copd1         6.439e-02  1.067e+00  1.092e-01  0.590  0.55548    
+## quintile0    -1.422e+01  6.660e-07  9.177e+02 -0.015  0.98764    
+## quintile2    -3.167e-01  7.286e-01  1.592e-01 -1.988  0.04676 *  
+## quintile3     8.680e-02  1.091e+00  1.533e-01  0.566  0.57126    
+## quintile4     5.057e-02  1.052e+00  1.538e-01  0.329  0.74225    
+## quintile5     8.287e-02  1.086e+00  1.596e-01  0.519  0.60350    
+## ethnicgroup2  1.403e-02  1.014e+00  3.261e-01  0.043  0.96570    
+## ethnicgroup3 -7.728e-01  4.617e-01  4.167e-01 -1.854  0.06369 .  
+## ethnicgroup9  5.211e-01  1.684e+00  3.623e-01  1.438  0.15038    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##              exp(coef) exp(-coef) lower .95 upper .95
+## age          1.064e+00  9.398e-01    1.0525    1.0759
+## gender2      7.332e-01  1.364e+00    0.6063    0.8866
+## copd1        1.067e+00  9.376e-01    0.8610    1.3211
+## quintile0    6.660e-07  1.501e+06    0.0000       Inf
+## quintile2    7.286e-01  1.373e+00    0.5332    0.9955
+## quintile3    1.091e+00  9.169e-01    0.8076    1.4729
+## quintile4    1.052e+00  9.507e-01    0.7782    1.4218
+## quintile5    1.086e+00  9.205e-01    0.7946    1.4853
+## ethnicgroup2 1.014e+00  9.861e-01    0.5352    1.9217
+## ethnicgroup3 4.617e-01  2.166e+00    0.2040    1.0450
+## ethnicgroup9 1.684e+00  5.939e-01    0.8277    3.4254
+## 
+## Concordance= 0.67  (se = 0.013 )
+## Likelihood ratio test= 169.6  on 11 df,   p=&lt;2e-16
+## Wald test            = 142.4  on 11 df,   p=&lt;2e-16
+## Score (logrank) test = 143.1  on 11 df,   p=&lt;2e-16</code></pre>
+<pre class="r"><code>#still not converge
+
+# 2. combine categories
+tbl2 = 
+  tbl1 %&gt;% 
+  mutate(quintile_5grp = quintile) %&gt;% 
+  mutate(quintile_5grp = replace(quintile_5grp, quintile_5grp == &quot;0&quot;, &quot;5&quot;),
+         quintile_5grp = factor(quintile_5grp))
+
+cox_con = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)
+summary(cox_con) </code></pre>
+<pre><code>## Call:
+## coxph(formula = Surv(fu_time, death) ~ age + gender + copd + 
+##     quintile + ethnicgroup, data = tbl2)
+## 
+##   n= 951, number of events= 468 
+##    (49 observations deleted due to missingness)
+## 
+##                   coef exp(coef)  se(coef)      z Pr(&gt;|z|)    
+## age           0.062452  1.064443  0.005635 11.082  &lt; 2e-16 ***
+## gender2      -0.278350  0.757031  0.096478 -2.885  0.00391 ** 
+## copd1         0.044956  1.045982  0.108316  0.415  0.67811    
+## quintile      0.068762  1.071181  0.035380  1.944  0.05195 .  
+## ethnicgroup2  0.009406  1.009450  0.325074  0.029  0.97692    
+## ethnicgroup3 -0.796419  0.450941  0.415449 -1.917  0.05524 .  
+## ethnicgroup9  0.463197  1.589146  0.360763  1.284  0.19916    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##              exp(coef) exp(-coef) lower .95 upper .95
+## age             1.0644     0.9395    1.0528    1.0763
+## gender2         0.7570     1.3209    0.6266    0.9146
+## copd1           1.0460     0.9560    0.8459    1.2934
+## quintile        1.0712     0.9335    0.9994    1.1481
+## ethnicgroup2    1.0095     0.9906    0.5338    1.9089
+## ethnicgroup3    0.4509     2.2176    0.1998    1.0180
+## ethnicgroup9    1.5891     0.6293    0.7836    3.2229
+## 
+## Concordance= 0.665  (se = 0.013 )
+## Likelihood ratio test= 159.2  on 7 df,   p=&lt;2e-16
+## Wald test            = 134.2  on 7 df,   p=&lt;2e-16
+## Score (logrank) test = 132.4  on 7 df,   p=&lt;2e-16</code></pre>
+<pre class="r"><code># 3. drop the quintile zero(set to null)
+tbl2 = 
+  tbl1 %&gt;% 
+  mutate(quintile_5grp = quintile) %&gt;% 
+  mutate(quintile_5grp = replace(quintile_5grp, quintile_5grp == &quot;0&quot;, NA),
+         quintile_5grp = factor(quintile_5grp))
+
+cox_con = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)
+summary(cox_con) </code></pre>
+<pre><code>## Call:
+## coxph(formula = Surv(fu_time, death) ~ age + gender + copd + 
+##     quintile + ethnicgroup, data = tbl2)
+## 
+##   n= 951, number of events= 468 
+##    (49 observations deleted due to missingness)
+## 
+##                   coef exp(coef)  se(coef)      z Pr(&gt;|z|)    
+## age           0.062452  1.064443  0.005635 11.082  &lt; 2e-16 ***
+## gender2      -0.278350  0.757031  0.096478 -2.885  0.00391 ** 
+## copd1         0.044956  1.045982  0.108316  0.415  0.67811    
+## quintile      0.068762  1.071181  0.035380  1.944  0.05195 .  
+## ethnicgroup2  0.009406  1.009450  0.325074  0.029  0.97692    
+## ethnicgroup3 -0.796419  0.450941  0.415449 -1.917  0.05524 .  
+## ethnicgroup9  0.463197  1.589146  0.360763  1.284  0.19916    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##              exp(coef) exp(-coef) lower .95 upper .95
+## age             1.0644     0.9395    1.0528    1.0763
+## gender2         0.7570     1.3209    0.6266    0.9146
+## copd1           1.0460     0.9560    0.8459    1.2934
+## quintile        1.0712     0.9335    0.9994    1.1481
+## ethnicgroup2    1.0095     0.9906    0.5338    1.9089
+## ethnicgroup3    0.4509     2.2176    0.1998    1.0180
+## ethnicgroup9    1.5891     0.6293    0.7836    3.2229
+## 
+## Concordance= 0.665  (se = 0.013 )
+## Likelihood ratio test= 159.2  on 7 df,   p=&lt;2e-16
+## Wald test            = 134.2  on 7 df,   p=&lt;2e-16
+## Score (logrank) test = 132.4  on 7 df,   p=&lt;2e-16</code></pre>
 
 
 

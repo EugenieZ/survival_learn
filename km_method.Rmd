@@ -17,7 +17,8 @@ First, we load the dataset and do some variable manipulation.
 #load course data
 tbl1 = read_csv(file = "./data/prcatice_data.csv") %>% 
   mutate(gender = as.factor(gender)) %>% 
-  mutate(ethnicgroup = as.factor(ethnicgroup))
+  mutate(ethnicgroup = as.factor(ethnicgroup)) %>% 
+  mutate(copd = as.factor(copd))
 
 head(tbl1)
 ```
@@ -50,6 +51,49 @@ About missing data:
 1. should be missing at random (example of survey data/not random)  
 2. the process to treat missing data: understand why those data are missing- try to fill in the missing values on the basis of another variable- complete case analysis/ mean substitution/ multiple imputation/ maximum likelihood  
 
+##Running Multiple Cox Model
+```{r}
+cox_mod2 = coxph(Surv(fu_time, death) ~ ethnicgroup+age+gender+copd+prior_dnas, data = tbl1)
+summary(cox_mod2)
 
+```
 
+What to do when model does not converge:
+```{r}
+tbl2 =
+  tbl1 %>% 
+  mutate(quintile = as.factor(quintile))
+
+cox_uncon = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)
+summary(cox_uncon)
+
+# 1. change the reference category
+tbl2 =
+  tbl2 %>% 
+  mutate(quintile = relevel(quintile, ref = 2)) #quintile 1 as the ref cat 
+
+cox_uncon = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)
+summary(cox_uncon) 
+#still not converge
+
+# 2. combine categories
+tbl2 = 
+  tbl1 %>% 
+  mutate(quintile_5grp = quintile) %>% 
+  mutate(quintile_5grp = replace(quintile_5grp, quintile_5grp == "0", "5"),
+         quintile_5grp = factor(quintile_5grp))
+
+cox_con = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)
+summary(cox_con) 
+
+# 3. drop the quintile zero(set to null)
+tbl2 = 
+  tbl1 %>% 
+  mutate(quintile_5grp = quintile) %>% 
+  mutate(quintile_5grp = replace(quintile_5grp, quintile_5grp == "0", NA),
+         quintile_5grp = factor(quintile_5grp))
+
+cox_con = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)
+summary(cox_con) 
+```
 
