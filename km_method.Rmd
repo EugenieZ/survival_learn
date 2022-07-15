@@ -6,7 +6,9 @@ output: html_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+
 library(survival)
+library(survminer)
 library(ggplot2)
 ```
 
@@ -16,11 +18,13 @@ First, we load the dataset and do some variable manipulation.
 ```{r}
 #load course data
 tbl1 = read_csv(file = "./data/prcatice_data.csv") %>% 
+  janitor::clean_names() %>% 
   mutate(gender = as.factor(gender)) %>% 
   mutate(ethnicgroup = as.factor(ethnicgroup)) %>% 
   mutate(copd = as.factor(copd))
 
-head(tbl1)
+skimr::skim(tbl1) #explore the dataset
+
 ```
 
 Then we run overall KM method.
@@ -96,4 +100,46 @@ tbl2 =
 cox_con = coxph(Surv(fu_time, death) ~ age + gender + copd + quintile + ethnicgroup, data = tbl2)
 summary(cox_con) 
 ```
+
+##Checking the proportionality assumption
+
+```{r}
+#default arguments: cox.zph(fit, transform = "km", global = TRUE)
+
+fit = coxph(Surv(fu_time, death) ~ gender, data = tbl2)
+temp = cox.zph(fit)
+
+print(temp)
+plot(temp)
+ 
+```
+
+The line is pretty flat, meaning that the effect of gender little during the follow-up. That's good news.  
+Also, we can use 'ggcoxzh()', which produces graphs pf the scaled Schoenfield residuals against the transformed time for each covariate.
+
+```{r}
+#deviance residuals
+
+res.cox = coxph(Surv(fu_time, death) ~ age, data = tbl2)
+ggcoxdiagnostics(res.cox, type = "deviance",
+                 linear.predictions = FALSE, ggtheme = theme_bw())
+
+#test linear relation
+ggcoxfunctional(Surv(fu_time, death) ~ age + log(age) + sqrt(age), data = tbl2)
+```
+
+##Proportionality assumption not met
+
+If there is a statistical interaction between gender and time for example. Then the model is short of a coefficient.
+```{r}
+#test statistically significant
+fit = coxph(Surv(fu_time, death) ~ gender + tt(gender), data = tbl2) # 'tt' -> time-transform function
+summary(fit)
+
+```
+
+##Choose predictors
+
+Apply backwards method
+
 
